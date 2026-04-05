@@ -621,26 +621,26 @@ export class EmDashRuntime {
 		// It participates in exclusive hook resolution like any other plugin —
 		// auto-selected when it's the sole provider, overridden when a real one is configured.
 		// Gated by import.meta.env.DEV to prevent silent email loss in production.
-		if (import.meta.env.DEV) {
-			try {
-				const devConsolePlugin = definePlugin({
-					id: DEV_CONSOLE_EMAIL_PLUGIN_ID,
-					version: "0.0.0",
-					capabilities: ["email:provide"],
-					hooks: {
-						"email:deliver": {
-							exclusive: true,
-							handler: devConsoleEmailDeliver,
-						},
-					},
-				});
-				allPipelinePlugins.push(devConsolePlugin);
-				// Built-in plugins are always enabled
-				enabledPlugins.add(devConsolePlugin.id);
-			} catch (error) {
-				console.warn("[email] Failed to register dev console email provider:", error);
-			}
-		}
+		// if (import.meta.env.DEV) {
+		// 	try {
+		// 		const devConsolePlugin = definePlugin({
+		// 			id: DEV_CONSOLE_EMAIL_PLUGIN_ID,
+		// 			version: "0.0.0",
+		// 			capabilities: ["email:provide"],
+		// 			hooks: {
+		// 				"email:deliver": {
+		// 					exclusive: true,
+		// 					handler: devConsoleEmailDeliver,
+		// 				},
+		// 			},
+		// 		});
+		// 		allPipelinePlugins.push(devConsolePlugin);
+		// 		// Built-in plugins are always enabled
+		// 		enabledPlugins.add(devConsolePlugin.id);
+		// 	} catch (error) {
+		// 		console.warn("[email] Failed to register dev console email provider:", error);
+		// 	}
+		// }
 
 		// Register built-in default comment moderator.
 		// Always present — auto-selected as the sole comment:moderate provider
@@ -1786,7 +1786,14 @@ export class EmDashRuntime {
 		// resolution order in getPluginRouteMeta to avoid auth/execution mismatches.
 		const trustedPlugin = this.configuredPlugins.find((p) => p.id === pluginId);
 		if (trustedPlugin && this.enabledPlugins.has(trustedPlugin.id)) {
-			const routeRegistry = new PluginRouteRegistry({ db: this.db });
+			const routeRegistry = new PluginRouteRegistry({
+				db: this.db,
+				storage: this.storage ?? undefined,
+				siteInfo: this.pipelineFactoryOptions.siteInfo,
+				cronReschedule: this.cronScheduler?.reschedule,
+				emailPipeline: this.email ?? undefined,
+				// FIXME: Add in here getUploadUrl func
+			});
 			routeRegistry.register(trustedPlugin);
 
 			const routeKey = path.replace(LEADING_SLASH_PATTERN, "");
